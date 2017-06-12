@@ -213,7 +213,7 @@ func gormColumnName(s string) string {
 func gormDataType(s string) string {
 	switch s {
 	case "integer":
-		return "uint"
+		return "uint32"
 	case "numeric":
 		return "float64"
 	case "character varying", "text", "json", "jsonb":
@@ -224,6 +224,8 @@ func gormDataType(s string) string {
 		return "time.Time"
 	case "date":
 		return "*time.Time"
+	case "bigint":
+		return "uint64"
 	default:
 		return s
 	}
