@@ -216,7 +216,7 @@ func gormDataType(s string) string {
 		return "uint"
 	case "numeric":
 		return "float64"
-	case "character varying", "text":
+	case "character varying", "text", "json":
 		return "string"
 	case "boolean":
 		return "bool"
