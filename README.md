@@ -15,8 +15,8 @@ Go 1.5 is acceptable, but `GO15VENDOREXPERIMENT=1` must be set.
 After installing required version of Go, you can build and install `pq2gorm` by
 
 ```bash
-$ go get -d -u github.com/wantedly/pq2gorm
-$ cd $GOPATH/src/github.com/wantedly/pq2gorm
+$ go get -d -u github.com/bitgaming/pq2gorm
+$ cd $GOPATH/src/github.com/bitgaming/pq2gorm
 $ make
 $ make install
 ```
