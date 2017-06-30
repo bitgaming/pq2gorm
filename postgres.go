@@ -49,7 +49,7 @@ func (p *Postgres) retrieveSelectedTables(targets []string) (*sql.Rows, error) {
 func (p *Postgres) RetrieveFields(table string) ([]*Field, error) {
 	query :=
 		`
-    select column_name, data_type, COALESCE(column_default, '') as column_default, is_nullable
+    select column_name, udt_name::regtype, COALESCE(column_default, '') as column_default, is_nullable
     from information_schema.columns
     where
       table_name='` + table + `'

@@ -2,6 +2,8 @@ package models
 
 {{ if .NeedTimePackage }}	import "time"
 {{ end -}}
+{{ if .NeedPgPackage }}		import "github.com/lib/pq"
+{{ end -}}
 
 type {{ .Name }} struct {
 {{ range .Fields -}}

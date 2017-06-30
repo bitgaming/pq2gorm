@@ -23,12 +23,14 @@ type TemplateParams struct {
 	Name            string
 	Fields          []*TemplateField
 	NeedTimePackage bool
+	NeedPgPackage   bool
 }
 
 var hasMany = make(map[string][]string)
 
 func GenerateModel(table string, pkeys map[string]bool, fields []*Field, tables []string) *TemplateParams {
 	var needTimePackage bool
+	var NeedPgPackage bool
 
 	templateFields := []*TemplateField{}
 
@@ -43,16 +45,16 @@ func GenerateModel(table string, pkeys map[string]bool, fields []*Field, tables 
 			} else {
 				fieldType = "time.Time"
 			}
-		}
-
-		if fieldType == "double precision" {
+		} else if strings.HasPrefix(fieldType, "pq.") {
+			NeedPgPackage = true
+		} else if fieldType == "double precision" {
 			fieldType = "float32"
 		}
 
 		templateFields = append(templateFields, &TemplateField{
 			Name: gormColumnName(field.Name),
 			Type: fieldType,
-			Tag:  genJSON(field.Name, field.Default, pkeys),
+			Tag:  genJSON(fieldType, field.Name, field.Default, pkeys),
 		})
 
 		isInfered, infColName := inferORM(field.Name, tables)
@@ -64,7 +66,7 @@ func GenerateModel(table string, pkeys map[string]bool, fields []*Field, tables 
 			templateFields = append(templateFields, &TemplateField{
 				Name:    colName,
 				Type:    "*" + colName,
-				Tag:     genJSON(strings.ToLower(infColName), "", nil),
+				Tag:     genJSON("", strings.ToLower(infColName), "", nil),
 				Comment: "This line is infered from column name \"" + field.Name + "\".",
 			})
 
@@ -77,6 +79,7 @@ func GenerateModel(table string, pkeys map[string]bool, fields []*Field, tables 
 		Name:            gormTableName(table),
 		Fields:          templateFields,
 		NeedTimePackage: needTimePackage,
+		NeedPgPackage:   NeedPgPackage,
 	}
 
 	return params
@@ -88,7 +91,7 @@ func AddHasMany(params *TemplateParams) {
 			params.Fields = append(params.Fields, &TemplateField{
 				Name:    gormColumnName(infColName),
 				Type:    "[]*" + gormTableName(infColName),
-				Tag:     genJSON(strings.ToLower(infColName), "", nil),
+				Tag:     genJSON("", strings.ToLower(infColName), "", nil),
 				Comment: "This line is infered from other tables.",
 			})
 		}
@@ -167,12 +170,17 @@ func inferORM(s string, tables []string) (bool, string) {
 }
 
 // Generate json
-func genJSON(columnName, columnDefault string, primaryKeys map[string]bool) (json string) {
+func genJSON(columnType, columnName, columnDefault string, primaryKeys map[string]bool) (json string) {
 	json = "json:\"" + columnName + "\""
 
 	if primaryKeys[columnName] {
 		p := "gorm:\"primary_key;AUTO_INCREMENT\" "
 		json = p + json
+	}
+	if columnType == "pq.Int64Array" {
+		json += " gorm:\"type:integer[]\""
+	} else if columnType == "pq.StringArray" {
+		json += " gorm:\"type:varchar(255)[]\""
 	}
 
 	if columnDefault != "" && !strings.Contains(columnDefault, "nextval") {
@@ -211,6 +219,12 @@ func gormColumnName(s string) string {
 }
 
 func gormDataType(s string) string {
+	if s == "integer[]" {
+		return "pq.Int64Array"
+	}
+	if s == "character varying[]" {
+		return "pq.StringArray"
+	}
 	switch s {
 	case "integer":
 		return "uint32"
