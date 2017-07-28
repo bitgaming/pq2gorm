@@ -54,7 +54,7 @@ func GenerateModel(table string, pkeys map[string]bool, fields []*Field, tables 
 		templateFields = append(templateFields, &TemplateField{
 			Name: gormColumnName(field.Name),
 			Type: fieldType,
-			Tag:  genJSON(fieldType, field.Name, field.Default, pkeys),
+			Tag:  genJSON(fieldType, field.Name, field.Default, field.Nullable, pkeys),
 		})
 
 		isInfered, infColName := inferORM(field.Name, tables)
@@ -66,7 +66,7 @@ func GenerateModel(table string, pkeys map[string]bool, fields []*Field, tables 
 			templateFields = append(templateFields, &TemplateField{
 				Name:    colName,
 				Type:    "*" + colName,
-				Tag:     genJSON("", strings.ToLower(infColName), "", nil),
+				Tag:     genJSON("", strings.ToLower(infColName), "", true, nil),
 				Comment: "This line is infered from column name \"" + field.Name + "\".",
 			})
 
@@ -91,7 +91,7 @@ func AddHasMany(params *TemplateParams) {
 			params.Fields = append(params.Fields, &TemplateField{
 				Name:    gormColumnName(infColName),
 				Type:    "[]*" + gormTableName(infColName),
-				Tag:     genJSON("", strings.ToLower(infColName), "", nil),
+				Tag:     genJSON("", strings.ToLower(infColName), "", true, nil),
 				Comment: "This line is infered from other tables.",
 			})
 		}
@@ -170,8 +170,11 @@ func inferORM(s string, tables []string) (bool, string) {
 }
 
 // Generate json
-func genJSON(columnType, columnName, columnDefault string, primaryKeys map[string]bool) (json string) {
+func genJSON(columnType, columnName, columnDefault string, nullable bool, primaryKeys map[string]bool) (json string) {
 	json = "json:\"" + columnName + "\""
+	if columnType == "" {
+		return
+	}
 
 	if primaryKeys[columnName] {
 		p := "gorm:\"primary_key;AUTO_INCREMENT\" "
@@ -183,9 +186,20 @@ func genJSON(columnType, columnName, columnDefault string, primaryKeys map[strin
 		json += " gorm:\"type:varchar(255)[]\""
 	}
 
-	if columnDefault != "" && !strings.Contains(columnDefault, "nextval") {
-		d := " sql:\"DEFAULT:" + columnDefault + "\""
-		json += d
+	// we don't want to have default value for boolean type, always require the golang client to explicitly give a value
+	// no model validation as well
+	if columnType == "bool" {
+		return
+	}
+
+	if columnDefault != "" {
+		if !strings.Contains(columnDefault, "nextval") {
+			d := " sql:\"DEFAULT:" + columnDefault + "\""
+			json += d
+		}
+	} else if !nullable {
+		validation := " valid:\"required\""
+		json += validation
 	}
 
 	return
