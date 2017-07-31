@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"go/format"
 	"io/ioutil"
 	"path/filepath"
@@ -175,29 +176,26 @@ func genJSON(columnType, columnName, columnDefault string, nullable bool, primar
 	if columnType == "" {
 		return
 	}
-
+	gormTags := []string{}
 	if primaryKeys[columnName] {
-		p := "gorm:\"primary_key;AUTO_INCREMENT\" "
-		json = p + json
+		gormTags = append(gormTags, "primary_key", "AUTO_INCREMENT")
 	}
 	if columnType == "pq.Int64Array" {
-		json += " gorm:\"type:integer[]\""
+		gormTags = append(gormTags, "type:integer[]")
 	} else if columnType == "pq.StringArray" {
-		json += " gorm:\"type:varchar(255)[]\""
+		gormTags = append(gormTags, "type:varchar(255)[]")
 	}
-
-	// we don't want to have default value for boolean type, always require the golang client to explicitly give a value
-	// no model validation as well
-	if columnType == "bool" {
-		return
+	if !nullable {
+		gormTags = append(gormTags, "not null")
 	}
+	json = fmt.Sprintf("gorm:\"%v\" %v", strings.Join(gormTags, ";"), json)
 
 	if columnDefault != "" {
 		if !strings.Contains(columnDefault, "nextval") {
 			d := " sql:\"DEFAULT:" + columnDefault + "\""
 			json += d
 		}
-	} else if !nullable {
+	} else if !nullable && columnType != "bool" {
 		validation := " valid:\"required\""
 		json += validation
 	}
