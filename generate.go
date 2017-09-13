@@ -234,7 +234,7 @@ func gormDataType(s string) string {
 	if s == "integer[]" {
 		return "pq.Int64Array"
 	}
-	if s == "character varying[]" {
+	if s == "character varying[]" || s == "text[]" {
 		return "pq.StringArray"
 	}
 	switch s {
