@@ -39,7 +39,8 @@ _testmain.go
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -65,5 +66,3 @@ Temporary Items
 /pq2gorm
 
 /out
-
-/bindata.go
