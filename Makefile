@@ -14,7 +14,7 @@ clean:
 
 .PHONY: deps
 deps: glide
-	go get github.com/jteeuwen/go-bindata/...
+	go get github.com/bitgaming/go-bindata/...
 	glide install
 
 .PHONY: generate-test
